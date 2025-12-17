@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { DropZone } from './components/DropZone';
 import { LoadingScreen } from './components/LoadingScreen';
-import { ImageFile, AppStatus, AspectRatio } from './types';
+import { TransitionSelector } from './components/TransitionSelector';
+import { ImageFile, AppStatus, AspectRatio, TransitionStyleId } from './types';
 import { generateTransitionPrompt, generateVeoVideo } from './services/gemini';
-import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2 } from 'lucide-react';
+import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
   const [startImage, setStartImage] = useState<ImageFile | null>(null);
   const [endImage, setEndImage] = useState<ImageFile | null>(null);
+  const [selectedStyle, setSelectedStyle] = useState<TransitionStyleId>('MORPH');
   const [status, setStatus] = useState<AppStatus>('IDLE');
   const [prompt, setPrompt] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -17,21 +19,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkKey = async () => {
-      // First, check if the key is already injected into the environment
       if (process.env.API_KEY && process.env.API_KEY !== '') {
         setHasKey(true);
         return;
       }
-
-      // If not, check if we are in an environment with the AI Studio picker
       if (window.aistudio) {
         try {
           const selected = await window.aistudio.hasSelectedApiKey();
-          if (selected) {
-            setHasKey(true);
-          }
+          if (selected) setHasKey(true);
         } catch (e) {
-          console.error("Error checking key status:", e);
+          console.error(e);
         }
       }
     };
@@ -39,40 +36,30 @@ const App: React.FC = () => {
   }, []);
 
   const handleApiKeySelection = async () => {
-    try {
-      if (window.aistudio) {
-        window.aistudio.openSelectKey();
-        // Assume success to proceed to the app immediately per guidelines
-        setHasKey(true);
-        setError(null);
-      } else {
-        setError("API Key picker is only available in the AI Studio sandbox. Please ensure process.env.API_KEY is configured in your environment.");
-      }
-    } catch (e) {
-      console.error(e);
-      setError("Failed to open key selection.");
+    if (window.aistudio) {
+      window.aistudio.openSelectKey();
+      setHasKey(true);
+      setError(null);
+    } else {
+      setError("Please ensure process.env.API_KEY is configured.");
     }
   };
 
   const handleGenerate = async () => {
     if (!startImage || !endImage) return;
-
     setError(null);
 
-    // Final safety check for API key before calling heavy services
-    if (!process.env.API_KEY && !hasKey) {
-        await handleApiKeySelection();
-        return;
+    if (!hasKey) {
+      await handleApiKeySelection();
+      return;
     }
 
     try {
       setStatus('ANALYZING');
-      
-      const generatedPrompt = await generateTransitionPrompt(startImage, endImage);
+      const generatedPrompt = await generateTransitionPrompt(startImage, endImage, selectedStyle);
       setPrompt(generatedPrompt);
       
       setStatus('GENERATING');
-
       const url = await generateVeoVideo(generatedPrompt, startImage, endImage, aspectRatio);
       setVideoUrl(url);
       
@@ -80,12 +67,7 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       setStatus('ERROR');
-      if (err.message && (err.message.includes('Requested entity was not found') || err.message.includes('API_KEY'))) {
-        setHasKey(false);
-        setError("API Key missing or invalid. Please select a project or check your configuration.");
-      } else {
-        setError(err.message || "An unexpected error occurred during generation.");
-      }
+      setError(err.message || "Something went wrong. Try again.");
     }
   };
 
@@ -97,176 +79,152 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30">
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30 overflow-x-hidden">
+      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Film size={18} className="text-white" />
+          <div className="flex items-center gap-2 group cursor-default">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+              <Film size={20} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-              VibeShift
-            </h1>
+            <div>
+              <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 tracking-tight leading-none">
+                VIBESHIFT
+              </h1>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Director's Cut</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
             {!hasKey && (
                <button 
                  onClick={handleApiKeySelection}
-                 className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-3 py-1 rounded-md border border-blue-500/20"
+                 className="text-xs font-bold text-blue-400 bg-blue-400/10 px-4 py-2 rounded-full border border-blue-400/20 hover:bg-blue-400/20 transition-all"
                >
-                 Connect API Key
+                 LINK API
                </button>
             )}
-            <a 
-              href="https://ai.google.dev/gemini-api/docs/billing" 
-              target="_blank" 
-              rel="noreferrer"
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors hidden sm:block"
-            >
-              Billing Documentation
-            </a>
+            <div className="hidden md:flex items-center gap-2 text-slate-500 text-xs">
+              <Sparkles size={14} className="text-amber-400" />
+              <span>Powered by Veo 3.1 & Gemini 3 Pro</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-12">
-        {/* API Key Modal / Warning */}
+      <main className="max-w-6xl mx-auto px-6 py-12 pb-24">
         {!hasKey && (
-          <div className="mb-12 p-8 rounded-2xl bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 flex flex-col items-center text-center">
-            <h2 className="text-2xl font-bold mb-3">API Key Required</h2>
-            <p className="text-slate-400 max-w-lg mb-6">
-              VibeShift requires a paid Google Cloud project key to use high-quality video generation models.
+          <div className="mb-12 p-8 rounded-3xl bg-slate-800/50 border border-slate-700 flex flex-col items-center text-center backdrop-blur-sm">
+            <h2 className="text-2xl font-bold mb-3">Professional Grade Video Engine</h2>
+            <p className="text-slate-400 max-w-lg mb-8">
+              Unlock cinematic transitions by connecting your Google Cloud project.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={handleApiKeySelection}
-                className="px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/40"
-              >
-                Select Key via AI Studio
-              </button>
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noreferrer"
-                className="px-6 py-3 rounded-full bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700 transition-all"
-              >
-                Get a Key
-              </a>
-            </div>
+            <button
+              onClick={handleApiKeySelection}
+              className="px-8 py-3 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-500 transition-all shadow-xl shadow-blue-900/40"
+            >
+              Select AI Studio Key
+            </button>
           </div>
         )}
 
-        {/* Main Interface */}
         {status === 'IDLE' || status === 'ERROR' ? (
-          <div className="animate-in slide-in-from-bottom-4 duration-500">
-             <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
-                Morph Moments into <span className="text-blue-400">Movies</span>
-              </h2>
-              <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-                Upload a start and end frame. AI will analyze the vibe and generate a seamless, cinematic transition video.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8 mb-12 relative">
-               <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-slate-900 p-2 rounded-full border border-slate-700 text-slate-500 shadow-xl">
-                  <ArrowRight size={24} />
-               </div>
-
-               <DropZone 
-                 label="Start Frame" 
-                 image={startImage} 
-                 onImageSelect={setStartImage} 
-                 disabled={!hasKey}
-               />
-               <DropZone 
-                 label="End Frame" 
-                 image={endImage} 
-                 onImageSelect={setEndImage}
-                 disabled={!hasKey} 
-               />
-            </div>
-
-            <div className="flex flex-col items-center gap-6">
-              <div className="flex items-center gap-4 bg-slate-800/50 p-2 rounded-full border border-slate-700">
-                  <div className="flex items-center gap-2 px-4 border-r border-slate-700">
-                      <Settings2 size={16} className="text-slate-400" />
-                      <span className="text-sm font-medium text-slate-300">Aspect Ratio</span>
-                  </div>
-                  <div className="flex gap-1 pr-1">
-                      <button 
-                        onClick={() => setAspectRatio('16:9')}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all ${aspectRatio === '16:9' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
-                      >
-                        16:9
-                      </button>
-                      <button 
-                        onClick={() => setAspectRatio('9:16')}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all ${aspectRatio === '9:16' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
-                      >
-                        9:16
-                      </button>
-                  </div>
+          <div className="grid lg:grid-cols-12 gap-12 animate-in slide-in-from-bottom-8 duration-700">
+            {/* Left Column: Visual Assets */}
+            <div className="lg:col-span-7 space-y-8">
+              <div className="mb-8">
+                <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded">Step 1: Upload Scenes</span>
+                <h2 className="text-4xl font-black mt-4 mb-2 tracking-tight">The <span className="text-blue-500">A-B</span> Sequence.</h2>
+                <p className="text-slate-400">Choose the starting moment and the final destination.</p>
               </div>
-
-              <button
-                onClick={handleGenerate}
-                disabled={!startImage || !endImage}
-                className={`
-                  group relative px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 flex items-center gap-3
-                  ${(!startImage || !endImage)
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
-                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg shadow-blue-900/40 hover:scale-105 active:scale-95'
-                  }
-                `}
-              >
-                <Wand2 size={20} className={(!startImage || !endImage) ? '' : 'group-hover:rotate-12 transition-transform'} />
-                {!hasKey && (!startImage || !endImage) ? 'Connect Key First' : 'Generate Transition'}
-              </button>
               
-              {error && (
-                <div className="flex items-center gap-3 text-red-400 bg-red-950/30 px-6 py-3 rounded-xl border border-red-900/50 animate-in fade-in slide-in-from-top-2 max-w-lg text-center">
-                  <AlertCircle size={20} className="shrink-0" />
-                  <span className="text-sm font-medium">{error}</span>
+              <div className="grid sm:grid-cols-2 gap-6 relative">
+                 <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-slate-900 p-3 rounded-full border border-slate-700 text-slate-400 shadow-2xl">
+                    <ArrowRight size={24} />
+                 </div>
+                 <DropZone label="First Frame" image={startImage} onImageSelect={setStartImage} disabled={!hasKey} />
+                 <DropZone label="Last Frame" image={endImage} onImageSelect={setEndImage} disabled={!hasKey} />
+              </div>
+            </div>
+
+            {/* Right Column: Style & Generate */}
+            <div className="lg:col-span-5 space-y-8 p-6 bg-slate-800/30 rounded-3xl border border-slate-800/60 backdrop-blur-md">
+              <TransitionSelector 
+                selected={selectedStyle} 
+                onSelect={setSelectedStyle} 
+                disabled={status !== 'IDLE' && status !== 'ERROR'} 
+              />
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded">Step 3: Output Settings</span>
                 </div>
-              )}
+                <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-2xl border border-slate-800">
+                    <div className="flex items-center gap-2 px-4 border-r border-slate-800 text-slate-400">
+                        <Settings2 size={16} />
+                        <span className="text-xs font-bold">RATIO</span>
+                    </div>
+                    <div className="flex gap-2 p-1 w-full">
+                        <button onClick={() => setAspectRatio('16:9')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aspectRatio === '16:9' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}>16:9</button>
+                        <button onClick={() => setAspectRatio('9:16')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aspectRatio === '9:16' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}>9:16</button>
+                    </div>
+                </div>
+
+                <button
+                  onClick={handleGenerate}
+                  disabled={!startImage || !endImage || !hasKey}
+                  className={`
+                    w-full py-5 rounded-2xl font-black text-lg transition-all duration-500 flex items-center justify-center gap-3
+                    ${(!startImage || !endImage || !hasKey)
+                      ? 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-2xl shadow-blue-500/20 hover:-translate-y-1 active:scale-[0.98]'
+                    }
+                  `}
+                >
+                  <Wand2 size={22} className={(!startImage || !endImage) ? '' : 'animate-pulse'} />
+                  ACTION!
+                </button>
+                
+                {error && (
+                  <div className="flex items-center gap-3 text-red-400 bg-red-950/20 px-4 py-3 rounded-xl border border-red-900/30 animate-in fade-in zoom-in-95">
+                    <AlertCircle size={18} className="shrink-0" />
+                    <span className="text-xs font-medium">{error}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : status === 'COMPLETE' && videoUrl ? (
-          <div className="animate-in zoom-in-50 duration-500 max-w-4xl mx-auto">
-            <div className="bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
-               <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 backdrop-blur-sm">
+          <div className="animate-in fade-in zoom-in-95 duration-700 max-w-5xl mx-auto">
+            <div className="bg-slate-800/50 rounded-3xl overflow-hidden shadow-3xl border border-slate-700 backdrop-blur-xl">
+               <div className="p-8 border-b border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <h3 className="font-bold text-xl text-white">Transition Result</h3>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-1 max-w-md">Prompt: {prompt}</p>
+                    <h3 className="font-black text-2xl text-white tracking-tight">VIBESHIFT RENDER COMPLETE</h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] font-black bg-blue-500 text-white px-2 py-0.5 rounded uppercase">{selectedStyle}</span>
+                      <p className="text-xs text-slate-400 italic">"{prompt}"</p>
+                    </div>
                   </div>
-                  <button onClick={resetApp} className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-white">
-                    <RefreshCw size={20} />
+                  <button onClick={resetApp} className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 rounded-xl transition-colors text-slate-400 hover:text-white text-sm font-bold">
+                    <RefreshCw size={18} />
+                    NEW EDIT
                   </button>
                </div>
                
-               <div className={`relative bg-black flex justify-center items-center ${aspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16] h-[600px] w-full'}`}>
-                 <video 
-                   src={videoUrl} 
-                   controls 
-                   autoPlay 
-                   loop 
-                   className="w-full h-full object-contain"
-                 />
+               <div className={`relative bg-black flex justify-center items-center shadow-inner ${aspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16] h-[70vh]'}`}>
+                 <video src={videoUrl} controls autoPlay loop className="w-full h-full object-contain" />
                </div>
 
-               <div className="p-6 bg-slate-800 border-t border-slate-700 flex flex-col sm:flex-row justify-end gap-3">
-                 <button onClick={resetApp} className="px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 font-medium transition-colors">
-                   Create New
+               <div className="p-8 bg-slate-900/50 flex flex-col sm:flex-row justify-end gap-4">
+                 <button onClick={resetApp} className="px-6 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 font-bold transition-all border border-transparent hover:border-slate-700">
+                   DISCARD & RETRY
                  </button>
                  <a 
                    href={videoUrl} 
-                   download="vibeshift-transition.mp4"
-                   className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-900/20"
+                   download={`vibeshift-${selectedStyle.toLowerCase()}.mp4`}
+                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-500/20"
                  >
-                   <Download size={18} />
-                   Download Video
+                   <Download size={20} />
+                   EXPORT VIDEO
                  </a>
                </div>
             </div>

@@ -1,36 +1,38 @@
 import { GoogleGenAI } from "@google/genai";
-import { ImageFile, AspectRatio } from "../types";
+import { ImageFile, AspectRatio, TransitionStyleId } from "../types";
 
-// Helper to clean base64 string
 const cleanBase64 = (base64: string) => {
   return base64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
 };
 
-/**
- * Analyzes two images to generate a transition prompt using Gemini 3 Pro.
- */
+const STYLE_PROMPTS: Record<TransitionStyleId, string> = {
+  MORPH: "Create a seamless ethereal morph where the first image fluidly transforms its geometry and textures into the second image.",
+  WHIP_PAN: "Use a high-speed cinematic whip pan effect, blurring the camera horizontally to transition with high kinetic energy.",
+  VERTIGO: "Execute a dramatic dolly zoom (Vertigo effect) where the background compresses or expands while transitioning to the second scene.",
+  SUBJECT_FLOW: "Focus on the movement of the primary subject; if a person is moving in the first, continue that trajectory seamlessly into the environment of the second.",
+  VORTEX: "A dynamic spiral zoom and rotation that pulls the viewer into the center of the first image and spins out into the second.",
+  DISSOLVE: "A graceful atmospheric cross-dissolve focusing on matching the lighting and color palettes between the two scenes."
+};
+
 export const generateTransitionPrompt = async (
   startImage: ImageFile,
-  endImage: ImageFile
+  endImage: ImageFile,
+  styleId: TransitionStyleId
 ): Promise<string> => {
-  // Ensure we have a key (though the UI should prevent this call if not)
-  if (!process.env.API_KEY) {
-    throw new Error("API Key not found");
-  }
+  if (!process.env.API_KEY) throw new Error("API Key not found");
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const styleInstruction = STYLE_PROMPTS[styleId];
 
   const prompt = `
-    Analyze these two images. The first image is the starting frame, and the second image is the ending frame of a video.
+    Analyze these two images (start and end frames). 
+    Your task is to write a single-sentence cinematic prompt for the Veo video model.
     
-    I need a creative prompt for a video generation model (Veo) to create a seamless transition between them.
+    Constraint: You MUST use this transition style: ${styleInstruction}
     
-    Task:
-    1. Identify the common visual elements, lighting, and "vibe" of both images.
-    2. Describe a cool camera movement (e.g., dolly in, pan right, morph, rack focus, hyperlapse) that would naturally bridge the two scenes.
-    3. Output a SINGLE, concise descriptive sentence that focuses ONLY on the visual movement and transition style. Do not include introductory text like "Here is a prompt".
+    Combine the specific visual details (lighting, subjects, colors) of these two images with the requested transition style.
     
-    Example output: "A cinematic slow dolly zoom moving from a sunny forest clearing into a futuristic neon cityscape, seamlessly blending the lighting changes."
+    Output ONLY the final descriptive sentence.
   `;
 
   try {
@@ -55,34 +57,23 @@ export const generateTransitionPrompt = async (
       },
     });
 
-    const text = response.text;
-    if (!text) throw new Error("No text response from Gemini");
-    return text.trim();
+    return response.text?.trim() || "A cinematic transition between two scenes.";
   } catch (error) {
-    console.error("Error analyzing images:", error);
-    throw new Error("Failed to analyze images for transition style.");
+    console.error("Analysis error:", error);
+    throw new Error("Failed to design the transition. Please try a different style.");
   }
 };
 
-/**
- * Generates a video using Veo 3.1 Fast, using a start image and an end image (lastFrame).
- */
 export const generateVeoVideo = async (
   prompt: string,
   startImage: ImageFile,
   endImage: ImageFile,
   aspectRatio: AspectRatio
 ): Promise<string> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key not found");
-  }
-
-  // Always create a new instance to ensure we capture the latest selected key if changed
+  if (!process.env.API_KEY) throw new Error("API Key not found");
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    console.log("Starting video generation with prompt:", prompt);
-    
     let operation = await ai.models.generateVideos({
       model: 'veo-3.1-fast-generate-preview',
       prompt: prompt,
@@ -101,34 +92,21 @@ export const generateVeoVideo = async (
       },
     });
 
-    console.log("Video operation started:", operation);
-
-    // Polling loop
     while (!operation.done) {
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Poll every 5 seconds
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       operation = await ai.operations.getVideosOperation({ operation: operation });
-      console.log("Polling video status...", operation.metadata);
     }
 
-    if (operation.error) {
-        throw new Error(`Video generation failed: ${operation.error.message}`);
-    }
+    if (operation.error) throw new Error(operation.error.message);
 
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (!videoUri) {
-      throw new Error("No video URI returned from Veo.");
-    }
+    if (!videoUri) throw new Error("Video URI missing.");
 
-    // Fetch the actual video bytes using the API key
     const response = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
-    if (!response.ok) {
-        throw new Error("Failed to download video bytes.");
-    }
     const blob = await response.blob();
     return URL.createObjectURL(blob);
-
   } catch (error) {
-    console.error("Error generating video:", error);
+    console.error("Generation error:", error);
     throw error;
   }
 };

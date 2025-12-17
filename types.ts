@@ -9,6 +9,15 @@ export type AppStatus = 'IDLE' | 'ANALYZING' | 'GENERATING' | 'COMPLETE' | 'ERRO
 
 export type AspectRatio = '16:9' | '9:16';
 
+export type TransitionStyleId = 'MORPH' | 'WHIP_PAN' | 'VERTIGO' | 'SUBJECT_FLOW' | 'VORTEX' | 'DISSOLVE';
+
+export interface TransitionStyle {
+  id: TransitionStyleId;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 export interface GenerationResult {
   videoUrl: string | null;
   promptUsed: string | null;
