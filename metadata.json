@@ -1,0 +1,5 @@
+{
+  "name": "VibeShift",
+  "description": "Generate seamless, AI-powered cinematic video transitions between two photos using Gemini 3 Pro and Veo.",
+  "requestFramePermissions": []
+}
