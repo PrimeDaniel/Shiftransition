@@ -4,12 +4,13 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { TransitionSelector } from './components/TransitionSelector';
 import { ImageFile, AppStatus, AspectRatio, TransitionStyleId } from './types';
 import { generateTransitionPrompt, generateVeoVideo } from './services/gemini';
-import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, Sparkles } from 'lucide-react';
+import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, Sparkles, Terminal } from 'lucide-react';
 
 const App: React.FC = () => {
   const [startImage, setStartImage] = useState<ImageFile | null>(null);
   const [endImage, setEndImage] = useState<ImageFile | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<TransitionStyleId>('FLY_FLOW');
+  const [customPrompt, setCustomPrompt] = useState<string>('');
   const [status, setStatus] = useState<AppStatus>('IDLE');
   const [prompt, setPrompt] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -47,6 +48,10 @@ const App: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!startImage || !endImage) return;
+    if (selectedStyle === 'CUSTOM' && !customPrompt.trim()) {
+      setError("Please enter a custom transition description.");
+      return;
+    }
     setError(null);
 
     if (!hasKey) {
@@ -56,7 +61,12 @@ const App: React.FC = () => {
 
     try {
       setStatus('ANALYZING');
-      const generatedPrompt = await generateTransitionPrompt(startImage, endImage, selectedStyle);
+      const generatedPrompt = await generateTransitionPrompt(
+        startImage, 
+        endImage, 
+        selectedStyle, 
+        selectedStyle === 'CUSTOM' ? customPrompt : undefined
+      );
       setPrompt(generatedPrompt);
       
       setStatus('GENERATING');
@@ -146,7 +156,23 @@ const App: React.FC = () => {
                  <DropZone label="Omega Target" image={endImage} onImageSelect={setEndImage} disabled={!hasKey} />
               </div>
 
-              <div className="hidden lg:block pt-12">
+              {selectedStyle === 'CUSTOM' && (
+                <div className="animate-in slide-in-from-top-4 duration-500 p-6 bg-slate-800/40 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 mb-4 text-blue-400">
+                    <Terminal size={18} />
+                    <span className="text-xs font-black uppercase tracking-widest">Custom Direction</span>
+                  </div>
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Describe your camera movement... (e.g., 'A slow tracking shot through the window and into the library')"
+                    className="w-full h-24 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all resize-none"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-2 italic">Tip: Be descriptive about camera paths and environmental interaction.</p>
+                </div>
+              )}
+
+              <div className="hidden lg:block pt-4">
                 <div className="flex items-center gap-4 text-slate-500">
                    <div className="h-[1px] flex-1 bg-slate-800"></div>
                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Advanced Neural Rendering</span>
@@ -189,7 +215,6 @@ const App: React.FC = () => {
                   <Wand2 size={24} className={(!startImage || !endImage) ? '' : 'group-hover:rotate-[30deg] transition-transform duration-500'} />
                   <span className="uppercase tracking-[0.2em]">{(!hasKey) ? 'Locked' : 'RENDER NOW'}</span>
                   
-                  {/* Subtle sheen animation */}
                   {hasKey && startImage && endImage && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
                   )}

@@ -9,7 +9,15 @@ export type AppStatus = 'IDLE' | 'ANALYZING' | 'GENERATING' | 'COMPLETE' | 'ERRO
 
 export type AspectRatio = '16:9' | '9:16';
 
-export type TransitionStyleId = 'FLY_FLOW' | 'SUBJECT_MIGRATE' | 'PORTAL_WARP' | 'HYPERLAPSE' | 'GEOMETRIC_RECON' | 'OBJECT_TRACE';
+export type TransitionStyleId = 
+  | 'FLY_FLOW' 
+  | 'SUBJECT_MIGRATE' 
+  | 'PORTAL_WARP' 
+  | 'HYPERLAPSE' 
+  | 'GEOMETRIC_RECON' 
+  | 'OBJECT_TRACE'
+  | 'AI_AUTO'
+  | 'CUSTOM';
 
 export interface TransitionStyle {
   id: TransitionStyleId;

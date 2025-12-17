@@ -5,30 +5,37 @@ const cleanBase64 = (base64: string) => {
   return base64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
 };
 
-const STYLE_PROMPTS: Record<TransitionStyleId, string> = {
+const STYLE_PROMPTS: Record<string, string> = {
   FLY_FLOW: "Execute an advanced 3D drone-style camera fly-through. The camera should physically navigate through the depth of the first scene, pushing past foreground elements to emerge seamlessly into the heart of the second scene, maintaining consistent spatial momentum.",
   SUBJECT_MIGRATE: "Focus on the primary subject or person. As they move through the first frame, their physical form and the environment around them should seamlessly evolve and morph into the subject and setting of the second frame, keeping the character's movement path perfectly aligned.",
   PORTAL_WARP: "Create a dimensional portal effect. The center of the first image should fold inward spatially, revealing the second image as a 3D volume that expands to fill the screen, creating a feeling of traveling through a wormhole between locations.",
   HYPERLAPSE: "Use a cinematic hyperlapse transition. The camera moves rapidly forward while the lighting and atmosphere of the first scene accelerate and transform over 'time' into the lighting conditions and weather of the second scene.",
   GEOMETRIC_RECON: "The architecture and objects of the first image should physically break apart into geometric fragments and reassemble themselves in 3D space to construct the buildings and structures of the second image.",
-  OBJECT_TRACE: "Identify a dominant object or shape trajectory. The camera follows this object's physical arc or path with a tight tracking shot, using its motion to bridge the gap into the new environment of the second scene."
+  OBJECT_TRACE: "Identify a dominant object or shape trajectory. The camera follows this object's physical arc or path with a tight tracking shot, using its motion to bridge the gap into the new environment of the second scene.",
+  AI_AUTO: "Perform a deep semantic analysis of both frames. Determine the most contextually intelligent cinematic transition possible. For example, if frame 1 is an exterior building and frame 2 is an interior room, execute a seamless 'zoom-through-the-window' transition. If the frames share a visual anchor, use a matching spatial move. Be creative, physically grounded, and spatially logical.",
 };
 
 export const generateTransitionPrompt = async (
   startImage: ImageFile,
   endImage: ImageFile,
-  styleId: TransitionStyleId
+  styleId: TransitionStyleId,
+  customPromptText?: string
 ): Promise<string> => {
   if (!process.env.API_KEY) throw new Error("API Key not found");
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const styleInstruction = STYLE_PROMPTS[styleId];
+  
+  let styleInstruction = STYLE_PROMPTS[styleId] || "";
+  if (styleId === 'CUSTOM' && customPromptText) {
+    styleInstruction = `Execute the following user-defined cinematic movement: ${customPromptText}`;
+  }
 
   const prompt = `
     Analyze these two images (start and end frames). 
     Your task is to write a single-sentence cinematic prompt for the Veo video model.
     
-    Constraint: You MUST use this advanced AI transition style: ${styleInstruction}
+    Instruction Mode: ${styleId}
+    Base logic: ${styleInstruction}
     
     Bridge the visual logic, depth, and texture of these two images. Avoid simple blurs, fades, or spins. 
     Describe a physically grounded, high-end cinematic movement that leverages the 3D understanding of the scene.
@@ -94,7 +101,7 @@ export const generateVeoVideo = async (
     });
 
     while (!operation.done) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 10000));
       operation = await ai.operations.getVideosOperation({ operation: operation });
     }
 
