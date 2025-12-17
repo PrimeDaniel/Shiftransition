@@ -9,7 +9,7 @@ import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, S
 const App: React.FC = () => {
   const [startImage, setStartImage] = useState<ImageFile | null>(null);
   const [endImage, setEndImage] = useState<ImageFile | null>(null);
-  const [selectedStyle, setSelectedStyle] = useState<TransitionStyleId>('MORPH');
+  const [selectedStyle, setSelectedStyle] = useState<TransitionStyleId>('FLY_FLOW');
   const [status, setStatus] = useState<AppStatus>('IDLE');
   const [prompt, setPrompt] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -83,14 +83,14 @@ const App: React.FC = () => {
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 group cursor-default">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:rotate-[15deg] transition-transform duration-500">
               <Film size={20} className="text-white" />
             </div>
             <div>
               <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 tracking-tight leading-none">
                 VIBESHIFT
               </h1>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Director's Cut</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.25em]">AI Cinema Lab</span>
             </div>
           </div>
           
@@ -98,14 +98,14 @@ const App: React.FC = () => {
             {!hasKey && (
                <button 
                  onClick={handleApiKeySelection}
-                 className="text-xs font-bold text-blue-400 bg-blue-400/10 px-4 py-2 rounded-full border border-blue-400/20 hover:bg-blue-400/20 transition-all"
+                 className="text-[10px] font-black tracking-widest text-blue-400 bg-blue-400/10 px-4 py-2 rounded-full border border-blue-400/20 hover:bg-blue-400/20 transition-all"
                >
-                 LINK API
+                 CONNECT PROJECT
                </button>
             )}
             <div className="hidden md:flex items-center gap-2 text-slate-500 text-xs">
-              <Sparkles size={14} className="text-amber-400" />
-              <span>Powered by Veo 3.1 & Gemini 3 Pro</span>
+              <Sparkles size={14} className="text-amber-400 animate-pulse" />
+              <span className="font-medium">Veo 3.1 & Gemini 3 Pro</span>
             </div>
           </div>
         </div>
@@ -113,59 +113,65 @@ const App: React.FC = () => {
 
       <main className="max-w-6xl mx-auto px-6 py-12 pb-24">
         {!hasKey && (
-          <div className="mb-12 p-8 rounded-3xl bg-slate-800/50 border border-slate-700 flex flex-col items-center text-center backdrop-blur-sm">
-            <h2 className="text-2xl font-bold mb-3">Professional Grade Video Engine</h2>
-            <p className="text-slate-400 max-w-lg mb-8">
-              Unlock cinematic transitions by connecting your Google Cloud project.
+          <div className="mb-12 p-8 rounded-[2rem] bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50 flex flex-col items-center text-center backdrop-blur-sm shadow-2xl">
+            <h2 className="text-2xl font-black mb-3">AI Cinematic Pipeline</h2>
+            <p className="text-slate-400 max-w-lg mb-8 text-sm">
+              VibeShift utilizes high-end spatial reasoning to reconstruct worlds between your images. Connect a paid Google Cloud project to begin rendering.
             </p>
             <button
               onClick={handleApiKeySelection}
-              className="px-8 py-3 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-500 transition-all shadow-xl shadow-blue-900/40"
+              className="px-10 py-4 rounded-full bg-blue-600 text-white font-black text-sm uppercase tracking-widest hover:bg-blue-500 transition-all shadow-xl shadow-blue-900/40 active:scale-95"
             >
-              Select AI Studio Key
+              Link AI Studio API
             </button>
           </div>
         )}
 
         {status === 'IDLE' || status === 'ERROR' ? (
-          <div className="grid lg:grid-cols-12 gap-12 animate-in slide-in-from-bottom-8 duration-700">
+          <div className="grid lg:grid-cols-12 gap-12 animate-in slide-in-from-bottom-12 duration-1000">
             {/* Left Column: Visual Assets */}
-            <div className="lg:col-span-7 space-y-8">
-              <div className="mb-8">
-                <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded">Step 1: Upload Scenes</span>
-                <h2 className="text-4xl font-black mt-4 mb-2 tracking-tight">The <span className="text-blue-500">A-B</span> Sequence.</h2>
-                <p className="text-slate-400">Choose the starting moment and the final destination.</p>
+            <div className="lg:col-span-7 space-y-10">
+              <div>
+                <h2 className="text-5xl font-black mb-4 tracking-tighter leading-tight">
+                  The <span className="text-blue-500">Spatial</span> <br/>Sequence.
+                </h2>
+                <p className="text-slate-400 text-lg max-w-md">Upload two frames to define the start and end of your cinematic voyage.</p>
               </div>
               
               <div className="grid sm:grid-cols-2 gap-6 relative">
-                 <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-slate-900 p-3 rounded-full border border-slate-700 text-slate-400 shadow-2xl">
-                    <ArrowRight size={24} />
+                 <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-slate-900 p-4 rounded-full border border-slate-700 text-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                    <ArrowRight size={24} strokeWidth={3} />
                  </div>
-                 <DropZone label="First Frame" image={startImage} onImageSelect={setStartImage} disabled={!hasKey} />
-                 <DropZone label="Last Frame" image={endImage} onImageSelect={setEndImage} disabled={!hasKey} />
+                 <DropZone label="Alpha Source" image={startImage} onImageSelect={setStartImage} disabled={!hasKey} />
+                 <DropZone label="Omega Target" image={endImage} onImageSelect={setEndImage} disabled={!hasKey} />
+              </div>
+
+              <div className="hidden lg:block pt-12">
+                <div className="flex items-center gap-4 text-slate-500">
+                   <div className="h-[1px] flex-1 bg-slate-800"></div>
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em]">Advanced Neural Rendering</span>
+                   <div className="h-[1px] flex-1 bg-slate-800"></div>
+                </div>
               </div>
             </div>
 
             {/* Right Column: Style & Generate */}
-            <div className="lg:col-span-5 space-y-8 p-6 bg-slate-800/30 rounded-3xl border border-slate-800/60 backdrop-blur-md">
+            <div className="lg:col-span-5 space-y-8 p-8 bg-slate-800/20 rounded-[2.5rem] border border-slate-800/80 backdrop-blur-xl shadow-2xl">
               <TransitionSelector 
                 selected={selectedStyle} 
                 onSelect={setSelectedStyle} 
                 disabled={status !== 'IDLE' && status !== 'ERROR'} 
               />
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded">Step 3: Output Settings</span>
-                </div>
-                <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-2xl border border-slate-800">
-                    <div className="flex items-center gap-2 px-4 border-r border-slate-800 text-slate-400">
+              <div className="space-y-6 pt-4">
+                <div className="flex items-center gap-4 bg-slate-900/60 p-2 rounded-2xl border border-slate-800 shadow-inner">
+                    <div className="flex items-center gap-2 px-4 border-r border-slate-800 text-slate-500">
                         <Settings2 size={16} />
-                        <span className="text-xs font-bold">RATIO</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider">FRAME</span>
                     </div>
                     <div className="flex gap-2 p-1 w-full">
-                        <button onClick={() => setAspectRatio('16:9')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aspectRatio === '16:9' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}>16:9</button>
-                        <button onClick={() => setAspectRatio('9:16')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aspectRatio === '9:16' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}>9:16</button>
+                        <button onClick={() => setAspectRatio('16:9')} className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all duration-300 ${aspectRatio === '16:9' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}>16:9</button>
+                        <button onClick={() => setAspectRatio('9:16')} className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all duration-300 ${aspectRatio === '9:16' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}>9:16</button>
                     </div>
                 </div>
 
@@ -173,58 +179,63 @@ const App: React.FC = () => {
                   onClick={handleGenerate}
                   disabled={!startImage || !endImage || !hasKey}
                   className={`
-                    w-full py-5 rounded-2xl font-black text-lg transition-all duration-500 flex items-center justify-center gap-3
+                    w-full py-6 rounded-2xl font-black text-xl transition-all duration-700 flex items-center justify-center gap-4 group overflow-hidden relative
                     ${(!startImage || !endImage || !hasKey)
-                      ? 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-50'
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-2xl shadow-blue-500/20 hover:-translate-y-1 active:scale-[0.98]'
+                      ? 'bg-slate-800 text-slate-700 cursor-not-allowed'
+                      : 'bg-white text-slate-950 hover:bg-blue-500 hover:text-white shadow-2xl shadow-blue-500/10 hover:-translate-y-1 active:scale-95'
                     }
                   `}
                 >
-                  <Wand2 size={22} className={(!startImage || !endImage) ? '' : 'animate-pulse'} />
-                  ACTION!
+                  <Wand2 size={24} className={(!startImage || !endImage) ? '' : 'group-hover:rotate-[30deg] transition-transform duration-500'} />
+                  <span className="uppercase tracking-[0.2em]">{(!hasKey) ? 'Locked' : 'RENDER NOW'}</span>
+                  
+                  {/* Subtle sheen animation */}
+                  {hasKey && startImage && endImage && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
+                  )}
                 </button>
                 
                 {error && (
-                  <div className="flex items-center gap-3 text-red-400 bg-red-950/20 px-4 py-3 rounded-xl border border-red-900/30 animate-in fade-in zoom-in-95">
-                    <AlertCircle size={18} className="shrink-0" />
-                    <span className="text-xs font-medium">{error}</span>
+                  <div className="flex items-center gap-3 text-red-400 bg-red-950/20 px-5 py-4 rounded-2xl border border-red-900/30 animate-in fade-in zoom-in-95">
+                    <AlertCircle size={20} className="shrink-0" />
+                    <span className="text-xs font-bold tracking-tight">{error}</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
         ) : status === 'COMPLETE' && videoUrl ? (
-          <div className="animate-in fade-in zoom-in-95 duration-700 max-w-5xl mx-auto">
-            <div className="bg-slate-800/50 rounded-3xl overflow-hidden shadow-3xl border border-slate-700 backdrop-blur-xl">
-               <div className="p-8 border-b border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="animate-in fade-in zoom-in-95 duration-1000 max-w-5xl mx-auto">
+            <div className="bg-slate-800/40 rounded-[2.5rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-slate-700/50 backdrop-blur-3xl">
+               <div className="p-8 border-b border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                   <div>
-                    <h3 className="font-black text-2xl text-white tracking-tight">VIBESHIFT RENDER COMPLETE</h3>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] font-black bg-blue-500 text-white px-2 py-0.5 rounded uppercase">{selectedStyle}</span>
-                      <p className="text-xs text-slate-400 italic">"{prompt}"</p>
+                    <h3 className="font-black text-3xl text-white tracking-tighter uppercase italic">Render Master</h3>
+                    <div className="flex flex-wrap items-center gap-3 mt-3">
+                      <span className="text-[10px] font-black bg-blue-600 text-white px-3 py-1 rounded-full uppercase tracking-widest">{selectedStyle.replace('_', ' ')}</span>
+                      <p className="text-xs text-slate-500 font-medium max-w-lg italic line-clamp-1">"{prompt}"</p>
                     </div>
                   </div>
-                  <button onClick={resetApp} className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 rounded-xl transition-colors text-slate-400 hover:text-white text-sm font-bold">
-                    <RefreshCw size={18} />
-                    NEW EDIT
+                  <button onClick={resetApp} className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-full transition-all text-slate-300 hover:text-white text-[10px] font-black uppercase tracking-widest border border-slate-700">
+                    <RefreshCw size={16} />
+                    New Project
                   </button>
                </div>
                
-               <div className={`relative bg-black flex justify-center items-center shadow-inner ${aspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16] h-[70vh]'}`}>
+               <div className={`relative bg-black/80 flex justify-center items-center shadow-inner ${aspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16] h-[75vh]'}`}>
                  <video src={videoUrl} controls autoPlay loop className="w-full h-full object-contain" />
                </div>
 
-               <div className="p-8 bg-slate-900/50 flex flex-col sm:flex-row justify-end gap-4">
-                 <button onClick={resetApp} className="px-6 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 font-bold transition-all border border-transparent hover:border-slate-700">
-                   DISCARD & RETRY
+               <div className="p-10 bg-slate-900/60 flex flex-col sm:flex-row justify-end gap-6">
+                 <button onClick={resetApp} className="px-8 py-4 rounded-full text-slate-500 hover:text-white font-black text-[10px] tracking-[0.2em] uppercase transition-all">
+                   Discard Draft
                  </button>
                  <a 
                    href={videoUrl} 
                    download={`vibeshift-${selectedStyle.toLowerCase()}.mp4`}
-                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-500/20"
+                   className="px-10 py-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-2xl shadow-blue-500/30"
                  >
                    <Download size={20} />
-                   EXPORT VIDEO
+                   Export Final
                  </a>
                </div>
             </div>
@@ -233,6 +244,12 @@ const App: React.FC = () => {
           <LoadingScreen status={status} prompt={prompt} />
         )}
       </main>
+
+      <style>{`
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 };

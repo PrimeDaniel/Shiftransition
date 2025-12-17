@@ -6,12 +6,12 @@ const cleanBase64 = (base64: string) => {
 };
 
 const STYLE_PROMPTS: Record<TransitionStyleId, string> = {
-  MORPH: "Create a seamless ethereal morph where the first image fluidly transforms its geometry and textures into the second image.",
-  WHIP_PAN: "Use a high-speed cinematic whip pan effect, blurring the camera horizontally to transition with high kinetic energy.",
-  VERTIGO: "Execute a dramatic dolly zoom (Vertigo effect) where the background compresses or expands while transitioning to the second scene.",
-  SUBJECT_FLOW: "Focus on the movement of the primary subject; if a person is moving in the first, continue that trajectory seamlessly into the environment of the second.",
-  VORTEX: "A dynamic spiral zoom and rotation that pulls the viewer into the center of the first image and spins out into the second.",
-  DISSOLVE: "A graceful atmospheric cross-dissolve focusing on matching the lighting and color palettes between the two scenes."
+  FLY_FLOW: "Execute an advanced 3D drone-style camera fly-through. The camera should physically navigate through the depth of the first scene, pushing past foreground elements to emerge seamlessly into the heart of the second scene, maintaining consistent spatial momentum.",
+  SUBJECT_MIGRATE: "Focus on the primary subject or person. As they move through the first frame, their physical form and the environment around them should seamlessly evolve and morph into the subject and setting of the second frame, keeping the character's movement path perfectly aligned.",
+  PORTAL_WARP: "Create a dimensional portal effect. The center of the first image should fold inward spatially, revealing the second image as a 3D volume that expands to fill the screen, creating a feeling of traveling through a wormhole between locations.",
+  HYPERLAPSE: "Use a cinematic hyperlapse transition. The camera moves rapidly forward while the lighting and atmosphere of the first scene accelerate and transform over 'time' into the lighting conditions and weather of the second scene.",
+  GEOMETRIC_RECON: "The architecture and objects of the first image should physically break apart into geometric fragments and reassemble themselves in 3D space to construct the buildings and structures of the second image.",
+  OBJECT_TRACE: "Identify a dominant object or shape trajectory. The camera follows this object's physical arc or path with a tight tracking shot, using its motion to bridge the gap into the new environment of the second scene."
 };
 
 export const generateTransitionPrompt = async (
@@ -28,9 +28,10 @@ export const generateTransitionPrompt = async (
     Analyze these two images (start and end frames). 
     Your task is to write a single-sentence cinematic prompt for the Veo video model.
     
-    Constraint: You MUST use this transition style: ${styleInstruction}
+    Constraint: You MUST use this advanced AI transition style: ${styleInstruction}
     
-    Combine the specific visual details (lighting, subjects, colors) of these two images with the requested transition style.
+    Bridge the visual logic, depth, and texture of these two images. Avoid simple blurs, fades, or spins. 
+    Describe a physically grounded, high-end cinematic movement that leverages the 3D understanding of the scene.
     
     Output ONLY the final descriptive sentence.
   `;
@@ -57,7 +58,7 @@ export const generateTransitionPrompt = async (
       },
     });
 
-    return response.text?.trim() || "A cinematic transition between two scenes.";
+    return response.text?.trim() || "A cinematic spatial transition between two scenes.";
   } catch (error) {
     console.error("Analysis error:", error);
     throw new Error("Failed to design the transition. Please try a different style.");
