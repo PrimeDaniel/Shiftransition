@@ -3,14 +3,15 @@ import { DropZone } from './components/DropZone';
 import { LoadingScreen } from './components/LoadingScreen';
 import { TransitionSelector } from './components/TransitionSelector';
 import { ImageFile, AppStatus, AspectRatio, TransitionStyleId } from './types';
-import { generateTransitionPrompt, generateVeoVideo } from './services/gemini';
-import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, Sparkles, Terminal } from 'lucide-react';
+import { generateTransitionPrompt, generateVeoVideo, generateLuckyPrompt } from './services/gemini';
+import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, Sparkles, Terminal, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [startImage, setStartImage] = useState<ImageFile | null>(null);
   const [endImage, setEndImage] = useState<ImageFile | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<TransitionStyleId>('FLY_FLOW');
   const [customPrompt, setCustomPrompt] = useState<string>('');
+  const [isLuckyLoading, setIsLuckyLoading] = useState(false);
   const [status, setStatus] = useState<AppStatus>('IDLE');
   const [prompt, setPrompt] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -46,10 +47,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleFeelingLucky = async () => {
+    if (!startImage || !endImage) {
+      setError("Upload both images first to get a lucky prompt!");
+      return;
+    }
+    
+    setIsLuckyLoading(true);
+    setSelectedStyle('CUSTOM');
+    setError(null);
+    
+    try {
+      const lucky = await generateLuckyPrompt(startImage, endImage);
+      setCustomPrompt(lucky);
+    } catch (err: any) {
+      setError("AI was unable to find a lucky path. Try manual entry.");
+    } finally {
+      setIsLuckyLoading(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!startImage || !endImage) return;
     if (selectedStyle === 'CUSTOM' && !customPrompt.trim()) {
-      setError("Please enter a custom transition description.");
+      setError("Please enter a custom transition description or try Feeling Lucky.");
       return;
     }
     setError(null);
@@ -86,6 +107,7 @@ const App: React.FC = () => {
     setVideoUrl(null);
     setPrompt(null);
     setError(null);
+    setCustomPrompt('');
   };
 
   return (
@@ -122,7 +144,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-12 pb-24">
-        {!hasKey && (
+        {!hasKey && (status === 'IDLE' || status === 'ERROR') && (
           <div className="mb-12 p-8 rounded-[2rem] bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50 flex flex-col items-center text-center backdrop-blur-sm shadow-2xl">
             <h2 className="text-2xl font-black mb-3">AI Cinematic Pipeline</h2>
             <p className="text-slate-400 max-w-lg mb-8 text-sm">
@@ -156,36 +178,55 @@ const App: React.FC = () => {
                  <DropZone label="Omega Target" image={endImage} onImageSelect={setEndImage} disabled={!hasKey} />
               </div>
 
-              {selectedStyle === 'CUSTOM' && (
-                <div className="animate-in slide-in-from-top-4 duration-500 p-6 bg-slate-800/40 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
-                  <div className="flex items-center gap-2 mb-4 text-blue-400">
-                    <Terminal size={18} />
-                    <span className="text-xs font-black uppercase tracking-widest">Custom Direction</span>
+              {(selectedStyle === 'CUSTOM' || isLuckyLoading) && (
+                <div className="animate-in slide-in-from-top-4 duration-500 p-8 bg-slate-800/40 rounded-[2.5rem] border border-blue-500/30 backdrop-blur-md shadow-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 text-blue-400">
+                      <Terminal size={18} />
+                      <span className="text-xs font-black uppercase tracking-widest">Custom Direction</span>
+                    </div>
+                    {isLuckyLoading && (
+                      <div className="flex items-center gap-2 text-purple-400 animate-pulse">
+                        <Loader2 size={14} className="animate-spin" />
+                        <span className="text-[10px] font-black uppercase">Gemini is Thinking...</span>
+                      </div>
+                    )}
                   </div>
+                  
                   <textarea
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
+                    disabled={isLuckyLoading}
                     placeholder="Describe your camera movement... (e.g., 'A slow tracking shot through the window and into the library')"
-                    className="w-full h-24 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all resize-none"
+                    className="w-full h-32 bg-slate-950/50 border border-slate-700 rounded-2xl p-6 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all resize-none shadow-inner font-medium leading-relaxed"
                   />
-                  <p className="text-[10px] text-slate-500 mt-2 italic">Tip: Be descriptive about camera paths and environmental interaction.</p>
+                  <div className="flex justify-between items-center mt-4">
+                    <p className="text-[10px] text-slate-500 italic">Tip: Be descriptive about camera paths and spatial depth.</p>
+                    <button 
+                      onClick={() => setCustomPrompt('')}
+                      className="text-[10px] font-black uppercase text-slate-600 hover:text-red-400 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
               )}
 
               <div className="hidden lg:block pt-4">
                 <div className="flex items-center gap-4 text-slate-500">
                    <div className="h-[1px] flex-1 bg-slate-800"></div>
-                   <span className="text-[10px] font-black uppercase tracking-[0.3em]">Advanced Neural Rendering</span>
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em]">Neural Temporal Interpolation</span>
                    <div className="h-[1px] flex-1 bg-slate-800"></div>
                 </div>
               </div>
             </div>
 
             {/* Right Column: Style & Generate */}
-            <div className="lg:col-span-5 space-y-8 p-8 bg-slate-800/20 rounded-[2.5rem] border border-slate-800/80 backdrop-blur-xl shadow-2xl">
+            <div className="lg:col-span-5 space-y-8 p-8 bg-slate-800/20 rounded-[2.5rem] border border-slate-800/80 backdrop-blur-xl shadow-2xl h-fit">
               <TransitionSelector 
                 selected={selectedStyle} 
                 onSelect={setSelectedStyle} 
+                onLucky={handleFeelingLucky}
                 disabled={status !== 'IDLE' && status !== 'ERROR'} 
               />
 
@@ -193,7 +234,7 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-4 bg-slate-900/60 p-2 rounded-2xl border border-slate-800 shadow-inner">
                     <div className="flex items-center gap-2 px-4 border-r border-slate-800 text-slate-500">
                         <Settings2 size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-wider">FRAME</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider">OUTPUT</span>
                     </div>
                     <div className="flex gap-2 p-1 w-full">
                         <button onClick={() => setAspectRatio('16:9')} className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all duration-300 ${aspectRatio === '16:9' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}>16:9</button>
@@ -203,10 +244,10 @@ const App: React.FC = () => {
 
                 <button
                   onClick={handleGenerate}
-                  disabled={!startImage || !endImage || !hasKey}
+                  disabled={!startImage || !endImage || !hasKey || isLuckyLoading}
                   className={`
                     w-full py-6 rounded-2xl font-black text-xl transition-all duration-700 flex items-center justify-center gap-4 group overflow-hidden relative
-                    ${(!startImage || !endImage || !hasKey)
+                    ${(!startImage || !endImage || !hasKey || isLuckyLoading)
                       ? 'bg-slate-800 text-slate-700 cursor-not-allowed'
                       : 'bg-white text-slate-950 hover:bg-blue-500 hover:text-white shadow-2xl shadow-blue-500/10 hover:-translate-y-1 active:scale-95'
                     }

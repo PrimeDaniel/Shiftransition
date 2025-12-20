@@ -15,6 +15,39 @@ const STYLE_PROMPTS: Record<string, string> = {
   AI_AUTO: "Perform a deep semantic analysis of both frames. Determine the most contextually intelligent cinematic transition possible. For example, if frame 1 is an exterior building and frame 2 is an interior room, execute a seamless 'zoom-through-the-window' transition. If the frames share a visual anchor, use a matching spatial move. Be creative, physically grounded, and spatially logical.",
 };
 
+export const generateLuckyPrompt = async (
+  startImage: ImageFile,
+  endImage: ImageFile
+): Promise<string> => {
+  if (!process.env.API_KEY) throw new Error("API Key not found");
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  const prompt = `
+    Analyze these two images (start and end frames).
+    Your task is to come up with one EXTREMELY creative, wild, and cinematic AI-driven camera movement that bridges them.
+    Think of things like "flying through a keyhole", "the sky turning into the ocean floor", or "a macro zoom into a drop of water that reveals a new world".
+    The transition must be physically logical but visually stunning.
+    Output ONLY the descriptive sentence for a video generation model.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: {
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: startImage.mimeType, data: cleanBase64(startImage.base64) } },
+          { inlineData: { mimeType: endImage.mimeType, data: cleanBase64(endImage.base64) } },
+        ],
+      },
+    });
+    return response.text?.trim() || "A wild cinematic transition.";
+  } catch (error) {
+    console.error("Lucky prompt error:", error);
+    return "A creative drone flight pushing through the first scene into the heart of the second.";
+  }
+};
+
 export const generateTransitionPrompt = async (
   startImage: ImageFile,
   endImage: ImageFile,
