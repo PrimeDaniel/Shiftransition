@@ -4,12 +4,13 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { TransitionSelector } from './components/TransitionSelector';
 import { ImageFile, AppStatus, AspectRatio, TransitionStyleId } from './types';
 import { generateTransitionPrompt, generateVeoVideo, generateLuckyPrompt } from './services/gemini';
-import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, Sparkles, Terminal, Loader2 } from 'lucide-react';
+import { Wand2, AlertCircle, Download, RefreshCw, Film, ArrowRight, Settings2, Sparkles, Terminal, Loader2, Dice5, CheckSquare, Square } from 'lucide-react';
 
 const App: React.FC = () => {
   const [startImage, setStartImage] = useState<ImageFile | null>(null);
   const [endImage, setEndImage] = useState<ImageFile | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<TransitionStyleId>('FLY_FLOW');
+  const [isManualMode, setIsManualMode] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [isLuckyLoading, setIsLuckyLoading] = useState(false);
   const [status, setStatus] = useState<AppStatus>('IDLE');
@@ -54,7 +55,7 @@ const App: React.FC = () => {
     }
     
     setIsLuckyLoading(true);
-    setSelectedStyle('CUSTOM');
+    setIsManualMode(true);
     setError(null);
     
     try {
@@ -69,7 +70,7 @@ const App: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!startImage || !endImage) return;
-    if (selectedStyle === 'CUSTOM' && !customPrompt.trim()) {
+    if (isManualMode && !customPrompt.trim()) {
       setError("Please enter a custom transition description or try Feeling Lucky.");
       return;
     }
@@ -82,11 +83,12 @@ const App: React.FC = () => {
 
     try {
       setStatus('ANALYZING');
+      const finalStyle = isManualMode ? 'CUSTOM' : selectedStyle;
       const generatedPrompt = await generateTransitionPrompt(
         startImage, 
         endImage, 
-        selectedStyle, 
-        selectedStyle === 'CUSTOM' ? customPrompt : undefined
+        finalStyle, 
+        isManualMode ? customPrompt : undefined
       );
       setPrompt(generatedPrompt);
       
@@ -108,6 +110,8 @@ const App: React.FC = () => {
     setPrompt(null);
     setError(null);
     setCustomPrompt('');
+    setIsManualMode(false);
+    setSelectedStyle('FLY_FLOW');
   };
 
   return (
@@ -137,7 +141,7 @@ const App: React.FC = () => {
             )}
             <div className="hidden md:flex items-center gap-2 text-slate-500 text-xs">
               <Sparkles size={14} className="text-amber-400 animate-pulse" />
-              <span className="font-medium">Veo 3.1 & Gemini 3 Pro</span>
+              <span className="font-medium text-[10px] uppercase tracking-wider">Veo 3.1 Pipeline</span>
             </div>
           </div>
         </div>
@@ -178,41 +182,7 @@ const App: React.FC = () => {
                  <DropZone label="Omega Target" image={endImage} onImageSelect={setEndImage} disabled={!hasKey} />
               </div>
 
-              {(selectedStyle === 'CUSTOM' || isLuckyLoading) && (
-                <div className="animate-in slide-in-from-top-4 duration-500 p-8 bg-slate-800/40 rounded-[2.5rem] border border-blue-500/30 backdrop-blur-md shadow-2xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-blue-400">
-                      <Terminal size={18} />
-                      <span className="text-xs font-black uppercase tracking-widest">Custom Direction</span>
-                    </div>
-                    {isLuckyLoading && (
-                      <div className="flex items-center gap-2 text-purple-400 animate-pulse">
-                        <Loader2 size={14} className="animate-spin" />
-                        <span className="text-[10px] font-black uppercase">Gemini is Thinking...</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    disabled={isLuckyLoading}
-                    placeholder="Describe your camera movement... (e.g., 'A slow tracking shot through the window and into the library')"
-                    className="w-full h-32 bg-slate-950/50 border border-slate-700 rounded-2xl p-6 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all resize-none shadow-inner font-medium leading-relaxed"
-                  />
-                  <div className="flex justify-between items-center mt-4">
-                    <p className="text-[10px] text-slate-500 italic">Tip: Be descriptive about camera paths and spatial depth.</p>
-                    <button 
-                      onClick={() => setCustomPrompt('')}
-                      className="text-[10px] font-black uppercase text-slate-600 hover:text-red-400 transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="hidden lg:block pt-4">
+              <div className="hidden lg:block pt-12">
                 <div className="flex items-center gap-4 text-slate-500">
                    <div className="h-[1px] flex-1 bg-slate-800"></div>
                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Neural Temporal Interpolation</span>
@@ -222,15 +192,67 @@ const App: React.FC = () => {
             </div>
 
             {/* Right Column: Style & Generate */}
-            <div className="lg:col-span-5 space-y-8 p-8 bg-slate-800/20 rounded-[2.5rem] border border-slate-800/80 backdrop-blur-xl shadow-2xl h-fit">
+            <div className="lg:col-span-5 flex flex-col gap-6 p-8 bg-slate-800/20 rounded-[2.5rem] border border-slate-800/80 backdrop-blur-xl shadow-2xl h-fit">
               <TransitionSelector 
                 selected={selectedStyle} 
                 onSelect={setSelectedStyle} 
-                onLucky={handleFeelingLucky}
-                disabled={status !== 'IDLE' && status !== 'ERROR'} 
+                disabled={(status !== 'IDLE' && status !== 'ERROR') || isManualMode} 
               />
 
-              <div className="space-y-6 pt-4">
+              {/* Manual Mode Toggle & Feeling Lucky Button */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <button 
+                    onClick={() => setIsManualMode(!isManualMode)}
+                    className="flex items-center gap-2 group cursor-pointer transition-colors"
+                  >
+                    {isManualMode ? (
+                      <CheckSquare size={20} className="text-blue-500" />
+                    ) : (
+                      <Square size={20} className="text-slate-600 group-hover:text-slate-400" />
+                    )}
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${isManualMode ? 'text-blue-400' : 'text-slate-500'}`}>
+                      Manual Director
+                    </span>
+                  </button>
+
+                  <button 
+                    onClick={handleFeelingLucky}
+                    disabled={isLuckyLoading || !startImage || !endImage}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-purple-400 transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+                  >
+                    <Dice5 size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+                    Feeling Lucky
+                  </button>
+                </div>
+
+                {isManualMode && (
+                  <div className="animate-in slide-in-from-top-4 duration-500 p-6 bg-slate-950/40 rounded-3xl border border-blue-500/30 shadow-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 text-blue-400">
+                        <Terminal size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Override Prompt</span>
+                      </div>
+                      {isLuckyLoading && (
+                        <div className="flex items-center gap-1.5 text-purple-400 animate-pulse">
+                          <Loader2 size={12} className="animate-spin" />
+                          <span className="text-[9px] font-black uppercase">Thinking...</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      disabled={isLuckyLoading}
+                      placeholder="Describe your camera movement... (e.g., 'Fly the camera through the front door, turn 90 degrees left, and land on the table.')"
+                      className="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-4 text-[13px] text-slate-100 placeholder:text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all resize-none font-medium"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-6 pt-2">
                 <div className="flex items-center gap-4 bg-slate-900/60 p-2 rounded-2xl border border-slate-800 shadow-inner">
                     <div className="flex items-center gap-2 px-4 border-r border-slate-800 text-slate-500">
                         <Settings2 size={16} />
@@ -277,7 +299,7 @@ const App: React.FC = () => {
                   <div>
                     <h3 className="font-black text-3xl text-white tracking-tighter uppercase italic">Render Master</h3>
                     <div className="flex flex-wrap items-center gap-3 mt-3">
-                      <span className="text-[10px] font-black bg-blue-600 text-white px-3 py-1 rounded-full uppercase tracking-widest">{selectedStyle.replace('_', ' ')}</span>
+                      <span className="text-[10px] font-black bg-blue-600 text-white px-3 py-1 rounded-full uppercase tracking-widest">{isManualMode ? 'CUSTOM' : selectedStyle.replace('_', ' ')}</span>
                       <p className="text-xs text-slate-500 font-medium max-w-lg italic line-clamp-1">"{prompt}"</p>
                     </div>
                   </div>
