@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DropZone } from './components/DropZone';
 import { LoadingScreen } from './components/LoadingScreen';
 import { TransitionSelector } from './components/TransitionSelector';
@@ -19,6 +19,34 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [hasKey, setHasKey] = useState<boolean>(false);
+  const previousAspectRatioRef = useRef<AspectRatio>('16:9');
+
+  // Re-process images when aspect ratio changes
+  useEffect(() => {
+    const reprocessImages = async () => {
+      // Only reprocess if aspect ratio actually changed and images exist
+      if (aspectRatio === previousAspectRatioRef.current) return;
+      if (!startImage || !endImage) {
+        previousAspectRatioRef.current = aspectRatio;
+        return;
+      }
+      
+      try {
+        const { processImage } = await import('./utils/imageUtils');
+        const processedStart = await processImage(startImage.file, aspectRatio);
+        const processedEnd = await processImage(endImage.file, aspectRatio);
+        setStartImage(processedStart);
+        setEndImage(processedEnd);
+        previousAspectRatioRef.current = aspectRatio;
+      } catch (err: any) {
+        console.error('Failed to reprocess images:', err);
+        setError('Failed to resize images for new aspect ratio. Please re-upload them.');
+      }
+    };
+
+    reprocessImages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aspectRatio]);
 
   useEffect(() => {
     const checkKey = async () => {
@@ -178,8 +206,22 @@ const App: React.FC = () => {
                  <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-slate-900 p-4 rounded-full border border-slate-700 text-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
                     <ArrowRight size={24} strokeWidth={3} />
                  </div>
-                 <DropZone label="Alpha Source" image={startImage} onImageSelect={setStartImage} disabled={!hasKey} />
-                 <DropZone label="Omega Target" image={endImage} onImageSelect={setEndImage} disabled={!hasKey} />
+                 <DropZone 
+                   label="Alpha Source" 
+                   image={startImage} 
+                   onImageSelect={setStartImage} 
+                   disabled={!hasKey}
+                   aspectRatio={aspectRatio}
+                   onError={(err) => err && setError(err)}
+                 />
+                 <DropZone 
+                   label="Omega Target" 
+                   image={endImage} 
+                   onImageSelect={setEndImage} 
+                   disabled={!hasKey}
+                   aspectRatio={aspectRatio}
+                   onError={(err) => err && setError(err)}
+                 />
               </div>
 
               <div className="hidden lg:block pt-12">
